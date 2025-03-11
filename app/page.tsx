@@ -1,5 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 import { BookOpen, GraduationCap, Users, Video, CheckCircle, School } from "lucide-react"
 import { ChatbotButton } from "@/components/chatbot-button"
 import { motion } from "framer-motion"
@@ -103,13 +104,15 @@ export default function Home() {
       <section className="relative bg-gradient-to-b from-purple-700 to-purple-600 text-white py-20">
         {/* Background image with overlay */}
         <div className="absolute inset-0 bg-black/60  z-0">
-    <div
-      className="absolute inset-0 bg-cover bg-top"
-      style={{
-        backgroundImage:
-          "url('https://img.freepik.com/free-photo/schoolchild-sitting-desk-living-room-holding-school-book_482257-20310.jpg?t=st=1741688020~exp=1741691620~hmac=19bc42ea7395286db357341747a90866fb283ff051d86952d336969de98b4da6&w=1800')",
-      }}
-    ></div>
+        <div className="absolute inset-0">
+  <Image
+    src="/schoolGirl.jpg"
+    alt="School Girl"
+    layout="fill"
+    objectFit="cover"
+    priority
+  />
+</div>
   </div>
 
   <div className="container mx-auto px-6 text-center relative z-10">
