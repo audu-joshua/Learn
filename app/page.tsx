@@ -107,7 +107,7 @@ export default function Home() {
   {/* Background Image */}
   <Image
     src="/african-Kid.jpg"
-    alt="School Girl"
+    alt="African boy Studying"
     layout="fill"
     objectFit="cover"
     priority
