@@ -103,17 +103,20 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-purple-700 to-purple-600 text-white py-20">
         {/* Background image with overlay */}
-        <div className="absolute inset-0 bg-black/60  z-0">
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 z-0">
+  {/* Background Image */}
   <Image
-    src="/schoolGirl.jpg"
+    src="/african-Kid.jpg"
     alt="School Girl"
     layout="fill"
     objectFit="cover"
     priority
   />
+  
+  {/* Dark Overlay */}
+  <div className="absolute inset-0 bg-black/10"></div>
 </div>
-  </div>
+
 
   <div className="container mx-auto px-6 text-center relative z-10">
     <motion.h1
