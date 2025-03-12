@@ -231,12 +231,21 @@ export default function Home() {
       </div>
     </section>
 
-      {/* Features Section */}
-      {/* Features Section - Kid-Friendly Bold Redesign */}
-<section className="py-16 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 text-white">
+      {/* Features Section - Kid-Friendly Bold Redesign with Simple Parabolic Curves */}
+<section className="py-16 bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 text-white relative">
+  {/* Simplified curved top border using SVG */}
+  <div className="absolute top-0 left-0 w-full overflow-hidden h-12">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 60" preserveAspectRatio="none" className="w-full h-full">
+      <path 
+        fill="#fff" 
+        d="M0,0 C300,60 900,60 1200,0 L1200,0 L0,0 Z"
+      ></path>
+    </svg>
+  </div>
+
   <div className="container mx-auto px-6">
     <motion.div
-      className="text-center mb-12"
+      className="text-center mb-12 pt-8"
       initial={fadeIn.hidden}
       whileInView={fadeIn.visible}
       viewport={{ once: true }}
@@ -308,17 +317,25 @@ export default function Home() {
       ))}
     </motion.div>
   </div>
+
+  {/* Simplified curved bottom border using SVG */}
+  <div className="absolute bottom-0 left-0 w-full overflow-hidden h-12">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 60" preserveAspectRatio="none" className="w-full h-full">
+      <path 
+        fill="#f9fafb" 
+        d="M0,60 C300,0 900,0 1200,60 L1200,60 L0,60 Z"
+      ></path>
+    </svg>
+  </div>
 </section>
 
-      {/* CTA Section */}
-      {/* Ready to Excel Section with Light Background and Minimal Design */}
-{/* Ready to Excel Section - With Floating Shapes Animation */}
+      {/* Ready to Excel Section - With Responsive Floating Shapes Animation */}
 <section className="relative py-20 overflow-hidden bg-gray-50">
-  {/* Animated Floating Shapes Background - Spread throughout the section */}
-  <div className="absolute inset-0 z-0">
-    {/* Top left shape */}
+  {/* Animated Floating Shapes Background - Made responsive for mobile */}
+  <div className="absolute inset-0 z-0 pointer-events-none">
+    {/* Top left shape - smaller on mobile */}
     <motion.div
-      className="absolute h-20 w-20 rounded-full bg-purple-200/40 top-10 left-[10%]"
+      className="absolute h-12 w-12 md:h-20 md:w-20 rounded-full bg-purple-200/40 top-10 left-[10%]"
       animate={{
         y: [0, -20, 0],
         rotate: [0, 5, 0],
@@ -330,9 +347,9 @@ export default function Home() {
       }}
     />
     
-    {/* Bottom right shape */}
+    {/* Bottom right shape - hidden on mobile, visible on tablet+ */}
     <motion.div
-      className="absolute h-16 w-16 rounded-md bg-yellow-200/40 bottom-20 right-[15%]"
+      className="absolute hidden md:block h-16 w-16 rounded-md bg-yellow-200/40 bottom-20 right-[15%]"
       animate={{
         y: [0, 20, 0],
         rotate: [0, -5, 0],
@@ -344,9 +361,9 @@ export default function Home() {
       }}
     />
     
-    {/* Center right shape */}
+    {/* Center right shape - smaller on mobile */}
     <motion.div
-      className="absolute h-24 w-24 rotate-45 bg-blue-200/30 top-[30%] right-[30%]"
+      className="absolute h-16 w-16 md:h-24 md:w-24 rotate-45 bg-blue-200/30 top-[30%] right-[5%] md:right-[30%]"
       animate={{
         x: [0, 20, 0],
         rotate: [45, 55, 45],
@@ -358,9 +375,9 @@ export default function Home() {
       }}
     />
     
-    {/* Bottom left shape */}
+    {/* Bottom left shape - smaller on mobile, repositioned */}
     <motion.div
-      className="absolute h-28 w-28 rounded-full bg-green-200/30 bottom-[10%] left-[20%]"
+      className="absolute h-16 w-16 md:h-28 md:w-28 rounded-full bg-green-200/30 bottom-[5%] left-[5%] md:bottom-[10%] md:left-[20%]"
       animate={{
         x: [0, -15, 0],
         y: [0, 10, 0],
@@ -372,9 +389,9 @@ export default function Home() {
       }}
     />
     
-    {/* Center left shape */}
+    {/* Center left shape - hidden on mobile */}
     <motion.div
-      className="absolute h-14 w-14 rounded-lg bg-red-200/30 top-[40%] left-[25%]"
+      className="absolute hidden md:block h-14 w-14 rounded-lg bg-red-200/30 top-[40%] left-[25%]"
       animate={{
         y: [0, -15, 0],
         rotate: [0, 10, 0],
@@ -386,9 +403,9 @@ export default function Home() {
       }}
     />
     
-    {/* Top right shape */}
+    {/* Top right shape - smaller on mobile */}
     <motion.div
-      className="absolute h-18 w-18 rounded-full bg-indigo-200/30 top-[15%] right-[10%]"
+      className="absolute h-10 w-10 md:h-18 md:w-18 rounded-full bg-indigo-200/30 top-[15%] right-[10%]"
       animate={{
         x: [0, 15, 0],
         y: [0, 10, 0],
@@ -400,12 +417,12 @@ export default function Home() {
       }}
     />
     
-    {/* Central shape */}
+    {/* Central shape - smaller on mobile, lower opacity */}
     <motion.div
-      className="absolute h-16 w-16 rounded-full bg-pink-200/20 top-[50%] left-[50%]"
+      className="absolute h-10 w-10 md:h-16 md:w-16 rounded-full bg-pink-200/10 md:bg-pink-200/20 top-[50%] left-[50%]"
       animate={{
         scale: [1, 1.2, 1],
-        opacity: [0.2, 0.3, 0.2],
+        opacity: [0.1, 0.2, 0.1],
       }}
       transition={{
         duration: 8,
