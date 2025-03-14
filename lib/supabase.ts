@@ -1,24 +1,121 @@
 import { createClient } from "@supabase/supabase-js"
+import type { Database } from "./database.types"
+import { Profile } from "./types"
 
-// Check if environment variables are defined
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+// Initialize the Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Supabase environment variables are missing. Please check your .env.local file.")
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+})
+
+// Helper functions for auth
+export async function signUp(email: string, password: string, metadata: { full_name: string; role: string }) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: metadata,
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
+    },
+  })
+
+  return { data, error }
 }
 
-// Create a single supabase client for interacting with your database
-export const supabase = createClient(supabaseUrl || "", supabaseAnonKey || "")
+export async function signIn(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
-export type Profile = {
-  id: string
-  username: string
-  full_name: string
-  avatar_url: string | null
-  school: string | null
-  grade: string | null
-  exam_type: string | null
-  created_at: string
+  return { data, error }
 }
+
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  })
+
+  return { data, error }
+}
+
+export async function resetPassword(email: string) {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/reset-password`,
+  })
+
+  return { data, error }
+}
+
+export async function updatePassword(password: string) {
+  const { data, error } = await supabase.auth.updateUser({
+    password,
+  })
+
+  return { data, error }
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut()
+  return { error }
+}
+
+// Profile management
+export async function getProfile(userId: string) {
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
+
+  return { data, error }
+}
+
+export async function createProfile(profile: Partial<Profile>) {
+  const { data, error } = await supabase.from("profiles").insert([profile]).select()
+
+  return { data, error }
+}
+
+export async function updateProfile(userId: string, updates: Partial<Profile>) {
+  const { data, error } = await supabase.from("profiles").update(updates).eq("id", userId).select()
+
+  return { data, error }
+}
+
+export async function uploadAvatar(userId: string, file: File) {
+  // Create a unique file name
+  const fileExt = file.name.split(".").pop()
+  const fileName = `${userId}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`
+  const filePath = `avatars/${fileName}`
+
+  // Upload the file
+  const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file, { upsert: true })
+
+  if (uploadError) {
+    return { error: uploadError }
+  }
+
+  // Get the public URL
+  const { data } = supabase.storage.from("avatars").getPublicUrl(filePath)
+
+  // Update the user profile with the new avatar URL
+  const { data: profile, error: updateError } = await updateProfile(userId, {
+    avatar_url: data.publicUrl,
+  })
+
+  if (updateError) {
+    return { error: updateError }
+  }
+
+  return { data: { avatar_url: data.publicUrl }, error: null }
+}
+
+// Export types
+export type { Profile }
 

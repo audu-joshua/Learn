@@ -15,7 +15,6 @@ import {
   School,
   Building
 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { 
@@ -25,11 +24,17 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
-import { Profile } from "@/lib/supabase"
+import { useAuth } from "@/context/auth-contex"
 import { AnimatePresence, motion } from "framer-motion"
 
 export function Header() {
-  const [user, setUser] = useState<any>(null)
+  const { user, logout } = useAuth()
+  interface Profile {
+    id: string;
+    full_name: string;
+    avatar_url: string | null;
+  }
+
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -38,34 +43,24 @@ export function Header() {
   const router = useRouter()
 
   useEffect(() => {
-    async function getUser() {
+    async function getProfile() {
       setLoading(true)
 
-      // Get current user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
-
       if (user) {
-        setUser(user)
-
-        // Get user profile
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single()
-
-        if (profile) {
-          setProfile(profile)
-        }
+        // Get user profile logic here
+        // This would depend on how you're storing profile data with your new auth system
+        // For now, we'll create a simple profile object based on the user
+        setProfile({
+          id: user?.uid || "unknown-id",
+          full_name: user.displayName || user.email?.split('@')[0] || "User",
+          avatar_url: user.photoURL || null,
+        })
       }
 
       setLoading(false)
     }
 
-    getUser()
+    getProfile()
 
     // Add scroll listener
     const handleScroll = () => {
@@ -74,10 +69,10 @@ export function Header() {
 
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [user])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    await logout()
     router.push("/login")
   }
 
@@ -175,39 +170,6 @@ export function Header() {
 
           {/* Right Section */}
           <div className="flex items-center gap-3">
-            {/* Search Bar 
-            <div className="hidden md:flex relative">
-              <AnimatePresence initial={false}>
-                {isSearchActive ? (
-                  <motion.div
-                    initial={{ width: 40, opacity: 0 }}
-                    animate={{ width: 240, opacity: 1 }}
-                    exit={{ width: 40, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="flex items-center bg-gray-100 rounded-full overflow-hidden"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Search topics, lessons..."
-                      className="w-full bg-transparent border-none outline-none pl-4 pr-10 py-2 text-sm"
-                      autoFocus
-                      onBlur={() => setIsSearchActive(false)}
-                    />
-                    <Search className="absolute right-3 h-4 w-4 text-gray-500" />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"
-                    onClick={() => setIsSearchActive(true)}
-                  >
-                    <Search className="h-4 w-4 text-gray-500" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-*/}
             {/* Notification */}
             {user && (
               <Button variant="ghost" size="icon" className="hidden md:flex w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200">
@@ -289,19 +251,6 @@ export function Header() {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-
-                  {/* Mobile Search 
-                  <div className="p-4">
-                    <div className="relative w-full">
-                      <input
-                        type="text"
-                        placeholder="Search topics, lessons..."
-                        className="w-full bg-gray-100 rounded-full border-none pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                      />
-                      <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
-                    </div>
-                  </div>
-                  */}
 
                   {/* Mobile Navigation */}
                   <nav className="flex-1 overflow-y-auto py-4">

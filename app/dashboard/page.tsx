@@ -1,472 +1,344 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Progress } from "@/components/ui/progress"
-import { BookOpen, Award, Zap, Bell, Settings, LogOut, Video, FileText } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
-import type { Profile } from "@/lib/supabase"
+import { BookOpen, GraduationCap, Clock, BarChart3, Award, ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/context/auth-contex"
+import { useQuery } from "../../hooks/use-query"
+import { getSubjects, getUserQuizHistory } from "../../lib/api"
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState("overview")
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, profile, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
 
+  // Redirect if not authenticated
   useEffect(() => {
-    async function getUser() {
-      setLoading(true)
-
-      // Get current user
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser()
-
-      if (userError || !user) {
-        router.push("/login")
-        return
-      }
-
-      setUser(user)
-
-      // Get user profile
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single()
-
-      if (profile) {
-        setProfile(profile)
-      }
-
-      setLoading(false)
+    if (!isAuthLoading && !user) {
+      router.push("/login")
     }
+  }, [user, isAuthLoading, router])
 
-    getUser()
-  }, [router])
+  // Fetch subjects
+  const { data: subjects, isLoading: isSubjectsLoading } = useQuery({
+    queryFn: getSubjects,
+    enabled: !!user,
+  })
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push("/login")
+  // Fetch user quiz history
+  const { data: quizHistory, isLoading: isHistoryLoading } = useQuery({
+    queryFn: () => getUserQuizHistory(user?.id || ""),
+    enabled: !!user,
+  })
+
+  if (isAuthLoading) {
+    return <DashboardSkeleton />
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700 mx-auto"></div>
-          <p className="mt-4 text-purple-800">Loading your dashboard...</p>
-        </div>
-      </div>
-    )
+  if (!user || !profile) {
+    return null // Will redirect in useEffect
   }
 
   return (
-    <div className="min-h-screen bg-purple-50">
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-purple-800">
-            ExamPrep
-          </Link>
+    <div className="container py-8 px-4">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Welcome back, {profile.full_name.split(" ")[0]}</h1>
+        <p className="text-muted-foreground">Track your progress, continue learning, and prepare for your exams</p>
+      </div>
 
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <Avatar>
-                <AvatarImage
-                  src={profile?.avatar_url || "/placeholder.svg?height=32&width=32"}
-                  alt={profile?.full_name || "User"}
-                />
-                <AvatarFallback>{profile?.full_name?.charAt(0) || user?.email?.charAt(0) || "U"}</AvatarFallback>
-              </Avatar>
-              <span className="font-medium hidden md:inline">{profile?.full_name || user?.email}</span>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Learning Progress</CardTitle>
+            <CardDescription>Your overall learning journey</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <BookOpen className="h-8 w-8 text-purple-500 mr-3" />
+                <div>
+                  <p className="text-2xl font-bold">42%</p>
+                  <p className="text-xs text-muted-foreground">Curriculum completed</p>
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <span className="text-sm font-medium text-purple-700">12/28</span>
+              </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Quiz Performance</CardTitle>
+            <CardDescription>Your quiz and test results</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <GraduationCap className="h-8 w-8 text-blue-500 mr-3" />
+                <div>
+                  <p className="text-2xl font-bold">78%</p>
+                  <p className="text-xs text-muted-foreground">Average score</p>
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="text-sm font-medium text-blue-700">7/9</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Study Time</CardTitle>
+            <CardDescription>Your learning activity</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-green-500 mr-3" />
+                <div>
+                  <p className="text-2xl font-bold">8.5h</p>
+                  <p className="text-xs text-muted-foreground">This week</p>
+                </div>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-sm font-medium text-green-700">+2.3h</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Continue Learning */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Continue Learning</h2>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/dashboard/lessons" className="flex items-center">
+              View all <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
         </div>
-      </header>
 
-      <div className="container mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
-        {/* Sidebar */}
-        <aside className="w-full md:w-64 space-y-2">
-          <Card>
-            <CardContent className="p-4">
-              <div className="mb-6 text-center">
-                <Avatar className="h-20 w-20 mx-auto mb-2">
-                  <AvatarImage
-                    src={profile?.avatar_url || "/placeholder.svg?height=80&width=80"}
-                    alt={profile?.full_name || "User"}
-                  />
-                  <AvatarFallback className="text-xl">
-                    {profile?.full_name?.charAt(0) || user?.email?.charAt(0) || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <h3 className="font-medium text-lg">{profile?.full_name || "User"}</h3>
-                <p className="text-sm text-muted-foreground">{profile?.school || "School not set"}</p>
-                <div className="mt-1 inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
-                  {getExamTypeLabel(profile?.exam_type)}
-                </div>
-              </div>
-
-              <nav className="space-y-1">
-                <Button
-                  variant={activeTab === "overview" ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("overview")}
-                >
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Overview
-                </Button>
-                <Button
-                  variant={activeTab === "lessons" ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("lessons")}
-                >
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  Lessons
-                </Button>
-                <Button
-                  variant={activeTab === "videos" ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("videos")}
-                >
-                  <Video className="mr-2 h-4 w-4" />
-                  Teacher Videos
-                </Button>
-                <Button
-                  variant={activeTab === "practice" ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("practice")}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Past Questions
-                </Button>
-                <Button
-                  variant={activeTab === "quizzes" ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("quizzes")}
-                >
-                  <Zap className="mr-2 h-4 w-4" />
-                  Mock Exams
-                </Button>
-                <Button
-                  variant={activeTab === "achievements" ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("achievements")}
-                >
-                  <Award className="mr-2 h-4 w-4" />
-                  Achievements
-                </Button>
-                <Button
-                  variant={activeTab === "settings" ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("settings")}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-50"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </Button>
-              </nav>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Your Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1 text-sm">
-                    <span>Mathematics</span>
-                    <span>75%</span>
-                  </div>
-                  <Progress value={75} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1 text-sm">
-                    <span>English</span>
-                    <span>45%</span>
-                  </div>
-                  <Progress value={45} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1 text-sm">
-                    <span>Science</span>
-                    <span>90%</span>
-                  </div>
-                  <Progress value={90} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between mb-1 text-sm">
-                    <span>Social Studies</span>
-                    <span>60%</span>
-                  </div>
-                  <Progress value={60} className="h-2" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid grid-cols-4 md:w-[400px]">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="lessons">Lessons</TabsTrigger>
-              <TabsTrigger value="videos">Videos</TabsTrigger>
-              <TabsTrigger value="practice">Practice</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-4">
-              <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {isSubjectsLoading ? (
+            Array(3)
+              .fill(0)
+              .map((_, i) => (
+                <Card key={i} className="overflow-hidden">
+                  <div className="h-3 bg-gradient-to-r from-purple-500 to-blue-500" />
+                  <CardHeader>
+                    <Skeleton className="h-5 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-5/6" />
+                  </CardContent>
+                  <CardFooter>
+                    <Skeleton className="h-9 w-full" />
+                  </CardFooter>
+                </Card>
+              ))
+          ) : subjects && subjects.length > 0 ? (
+            subjects.slice(0, 3).map((subject) => (
+              <Card key={subject.id} className="overflow-hidden">
+                <div className="h-3 bg-gradient-to-r from-purple-500 to-blue-500" />
                 <CardHeader>
-                  <CardTitle>Welcome back, {profile?.full_name?.split(" ")[0] || "Student"}!</CardTitle>
-                  <CardDescription>Continue your {getExamTypeLabel(profile?.exam_type)} preparation</CardDescription>
+                  <CardTitle>{subject.name}</CardTitle>
+                  <CardDescription>
+                    {subject.description || `Explore ${subject.name} topics and lessons`}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Continue Learning</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-4">
-                          <div className="bg-blue-100 p-3 rounded-lg">
-                            <span className="text-3xl">🔢</span>
-                          </div>
-                          <div>
-                            <h4 className="font-medium">Algebra: Quadratic Equations</h4>
-                            <p className="text-sm text-muted-foreground">75% complete</p>
-                          </div>
-                        </div>
-                        <Progress value={75} className="h-2 mt-4" />
-                        <Button className="w-full mt-4">Continue</Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Teacher's Video</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-4">
-                          <div className="bg-green-100 p-3 rounded-lg">
-                            <Video className="h-6 w-6 text-green-700" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">English: Essay Writing</h4>
-                            <p className="text-sm text-muted-foreground">Mr. Johnson, Your School</p>
-                          </div>
-                        </div>
-                        <Button className="w-full mt-4">Watch Video</Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Mock Exam</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center gap-4">
-                          <div className="bg-yellow-100 p-3 rounded-lg">
-                            <FileText className="h-6 w-6 text-yellow-700" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{getExamTypeLabel(profile?.exam_type)} Practice Test</h4>
-                            <p className="text-sm text-muted-foreground">2 hours • 60 questions</p>
-                          </div>
-                        </div>
-                        <Button className="w-full mt-4">Start Exam</Button>
-                      </CardContent>
-                    </Card>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm">Progress</span>
+                    <span className="text-sm font-medium">35%</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
+                      style={{ width: "35%" }}
+                    />
                   </div>
                 </CardContent>
+                <CardFooter>
+                  <Button className="w-full" asChild>
+                    <Link href={`/dashboard/subjects/${subject.id}`}>Continue</Link>
+                  </Button>
+                </CardFooter>
               </Card>
+            ))
+          ) : (
+            <div className="col-span-3 py-12 text-center">
+              <p className="text-muted-foreground mb-4">No subjects available yet.</p>
+              <Button asChild>
+                <Link href="/dashboard/explore">Explore subjects</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
 
-              <Card>
+      {/* Recent Quiz Results */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Recent Quiz Results</h2>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/dashboard/results" className="flex items-center">
+              View all <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {isHistoryLoading ? (
+            Array(2)
+              .fill(0)
+              .map((_, i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-5 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-between mb-4">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <Skeleton className="h-6 w-16" />
+                    </div>
+                    <Skeleton className="h-4 w-full mb-2" />
+                    <Skeleton className="h-4 w-5/6" />
+                  </CardContent>
+                </Card>
+              ))
+          ) : quizHistory && quizHistory.length > 0 ? (
+            quizHistory.slice(0, 2).map((session) => (
+              <Card key={session.id}>
                 <CardHeader>
-                  <CardTitle>Upcoming Exams</CardTitle>
-                  <CardDescription>Prepare for these important dates</CardDescription>
+                  <CardTitle>{session.quiz.title}</CardTitle>
+                  <CardDescription>
+                    {session.quiz.subject?.name || "General"} •{" "}
+                    {new Date(session.completed_at || session.created_at).toLocaleDateString()}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { name: "Mathematics Mock Exam", date: "June 15, 2023", days: 12 },
-                      { name: "English Language Test", date: "June 22, 2023", days: 19 },
-                      { name: getExamTypeLabel(profile?.exam_type), date: "July 10, 2023", days: 37 },
-                    ].map((exam, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <h4 className="font-medium">{exam.name}</h4>
-                          <p className="text-sm text-muted-foreground">{exam.date}</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      {session.passed ? (
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                          <Award className="h-5 w-5 text-green-600" />
                         </div>
-                        <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
-                          {exam.days} days left
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center mr-3">
+                          <BarChart3 className="h-5 w-5 text-amber-600" />
                         </div>
+                      )}
+                      <div>
+                        <p className="font-medium">{session.passed ? "Passed" : "Needs improvement"}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {session.completed_at ? "Completed" : "In progress"}
+                        </p>
                       </div>
-                    ))}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold">{session.percentage ? `${session.percentage}%` : "—"}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {session.score ? `Score: ${session.score}` : "Not scored"}
+                      </p>
+                    </div>
                   </div>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href={`/dashboard/results/${session.id}`}>
+                      {session.completed_at ? "View details" : "Continue quiz"}
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Achievements</CardTitle>
-                  <CardDescription>Recent badges and rewards you've earned</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-4 overflow-auto pb-2">
-                    {["Math Whiz", "Science Explorer", "Reading Star", "Perfect Attendance", "Quiz Master"].map(
-                      (badge) => (
-                        <div key={badge} className="text-center flex-shrink-0 w-24">
-                          <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <Award className="h-8 w-8 text-purple-600" />
-                          </div>
-                          <p className="text-sm font-medium">{badge}</p>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="videos" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Teacher Videos from {profile?.school || "Your School"}</CardTitle>
-                  <CardDescription>Learn directly from your school's teachers</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {[
-                      {
-                        title: "Solving Quadratic Equations",
-                        subject: "Mathematics",
-                        teacher: "Mrs. Adeyemi",
-                        duration: "15 mins",
-                      },
-                      {
-                        title: "Essay Writing Techniques",
-                        subject: "English",
-                        teacher: "Mr. Johnson",
-                        duration: "22 mins",
-                      },
-                      { title: "Chemical Bonding", subject: "Chemistry", teacher: "Dr. Okafor", duration: "18 mins" },
-                      { title: "Nigerian Civil War", subject: "History", teacher: "Mrs. Bello", duration: "25 mins" },
-                      {
-                        title: "Photosynthesis Process",
-                        subject: "Biology",
-                        teacher: "Mr. Nwachukwu",
-                        duration: "20 mins",
-                      },
-                      { title: "Vectors and Scalars", subject: "Physics", teacher: "Mr. Adebayo", duration: "17 mins" },
-                    ].map((video, index) => (
-                      <Card key={index}>
-                        <CardContent className="p-4">
-                          <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center mb-3">
-                            <Video className="h-12 w-12 text-gray-400" />
-                          </div>
-                          <h4 className="font-medium">{video.title}</h4>
-                          <div className="flex items-center justify-between mt-2 text-sm">
-                            <span className="text-muted-foreground">{video.subject}</span>
-                            <span className="text-muted-foreground">{video.duration}</span>
-                          </div>
-                          <div className="flex items-center mt-2">
-                            <Avatar className="h-6 w-6 mr-2">
-                              <AvatarFallback>{video.teacher.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm">{video.teacher}</span>
-                          </div>
-                          <Button variant="outline" size="sm" className="w-full mt-3">
-                            Watch Video
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="practice" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Past Questions for {getExamTypeLabel(profile?.exam_type)}</CardTitle>
-                  <CardDescription>Practice with real past exam questions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {[
-                      { title: "Mathematics 2022", questions: 50, time: "2 hours", year: 2022 },
-                      { title: "English Language 2022", questions: 60, time: "2 hours", year: 2022 },
-                      { title: "Mathematics 2021", questions: 50, time: "2 hours", year: 2021 },
-                      { title: "English Language 2021", questions: 60, time: "2 hours", year: 2021 },
-                      { title: "Science 2022", questions: 60, time: "2 hours", year: 2022 },
-                      { title: "Social Studies 2022", questions: 50, time: "1.5 hours", year: 2022 },
-                    ].map((exam, index) => (
-                      <Card key={index}>
-                        <CardContent className="p-4 flex items-center gap-4">
-                          <div className="bg-purple-100 p-3 rounded-lg">
-                            <FileText className="h-6 w-6 text-purple-700" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{exam.title}</h4>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>{exam.questions} questions</span>
-                              <span>•</span>
-                              <span>{exam.time}</span>
-                            </div>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            Start
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </main>
+            ))
+          ) : (
+            <div className="col-span-2 py-12 text-center">
+              <p className="text-muted-foreground mb-4">You haven't taken any quizzes yet.</p>
+              <Button asChild>
+                <Link href="/dashboard/quizzes">Take a quiz</Link>
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-function getExamTypeLabel(examType: string | null): string {
-  switch (examType) {
-    case "common-entrance":
-      return "Common Entrance"
-    case "junior-waec":
-      return "Junior WAEC"
-    case "senior-waec":
-      return "Senior WAEC"
-    case "neco":
-      return "NECO"
-    case "jamb":
-      return "JAMB/UTME"
-    default:
-      return "Exam Preparation"
-  }
+function DashboardSkeleton() {
+  return (
+    <div className="container py-8 px-4">
+      <div className="mb-8">
+        <Skeleton className="h-10 w-64 mb-2" />
+        <Skeleton className="h-5 w-96" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {Array(3)
+          .fill(0)
+          .map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-5 w-36 mb-2" />
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Skeleton className="h-8 w-8 rounded-full mr-3" />
+                    <div>
+                      <Skeleton className="h-8 w-16 mb-1" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
+
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array(3)
+            .fill(0)
+            .map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <div className="h-3 bg-gray-200" />
+                <CardHeader>
+                  <Skeleton className="h-5 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between mb-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-8" />
+                  </div>
+                  <Skeleton className="h-2 w-full rounded-full" />
+                </CardContent>
+                <CardFooter>
+                  <Skeleton className="h-9 w-full" />
+                </CardFooter>
+              </Card>
+            ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
